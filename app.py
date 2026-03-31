@@ -1,7 +1,6 @@
 import json
 from flask import Flask, request, jsonify, send_from_directory
-from server.search import search, all as all_companies, all_names_desc, all_batches
-from server.scrape import company as scrape_company
+from server.search import search, all as all_fellows, all_names_desc, all_years
 
 app = Flask(__name__,
         static_url_path='/',
@@ -12,8 +11,7 @@ app.config['JSON_AS_ASCII'] = False
 @app.route('/search', methods=['GET'])
 def semantic_search():
     text = request.args.get('text')
-    batch = request.args.get('batch')
-    show_inactive = request.args.get('show_inactive')
+    year = request.args.get('year')
     n = 25
     try:
         n = int(request.args.get('n'))
@@ -21,35 +19,21 @@ def semantic_search():
         pass
 
     if not text:
-        companies = all_companies()
+        fellows = all_fellows()
     else:
-        companies = search(text)
+        fellows = search(text)
 
-    if not show_inactive or show_inactive == 'false':
-        companies = [co for co in companies if co['status'] != 'Inactive']
-    if batch:
-        companies = [co for co in companies if co['batch'] == batch]
+    if year:
+        fellows = [f for f in fellows if f['year'] == year]
 
-    return jsonify(companies[:n])
-
-@app.route('/company', methods=['GET'])
-def get_company():
-    slug = request.args.get('slug')
-    if not slug:
-        return jsonify(None)
-
-    scraped = scrape_company(slug)
-    if scraped:
-        return jsonify(scraped)
-    return f'Could not find company metadata for "{slug}"', 500
+    return jsonify(fellows[:n])
 
 @app.route('/preloads.js', methods=['GET'])
 def get_preloads_js():
-    batches = f'const YC_BATCHES = {json.dumps(all_batches())};'
-    names = f'const YC_NAMES_DESC = {json.dumps(all_names_desc())};'
-    return '\n'.join([batches, names])
+    years = f'const TF_YEARS = {json.dumps(all_years())};'
+    names = f'const TF_NAMES_DESC = {json.dumps(all_names_desc())};'
+    return '\n'.join([years, names])
 
 @app.route('/', methods=['GET'])
 def index():
     return app.send_static_file('index.html')
-

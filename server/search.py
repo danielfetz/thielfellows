@@ -4,45 +4,45 @@ from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
-yc_companies = []
-with open('data/yc-embedded.json', 'r') as embeddings_file:
-    yc_companies = [co for co in json.load(embeddings_file) if co.get('description_embedding')]
-    # make top companies appear first by default, then sort by batch
-    yc_companies.sort(key=lambda co: co['batch'], reverse=True)
-    yc_companies.sort(key=lambda co: 0 if co['top_company'] else 1)
+fellows = []
+with open('data/fellows-embedded.json', 'r') as embeddings_file:
+    fellows = json.load(embeddings_file)
+    fellows.sort(key=lambda f: f['year'], reverse=True)
 
-all_yc_batches = list(set(co['batch'] for co in yc_companies))
-all_yc_batches.sort(
-    # place "Unspecified" at end of list
-    key=lambda batch: '\x00' if batch == 'Unspecified' else batch,
-    reverse=True,
-)
+all_fellow_years = list(set(f['year'] for f in fellows))
+all_fellow_years.sort(reverse=True)
 
-all_yc_names_and_desc = [[co['name'], co['one_liner'] or co['long_description']] for co in yc_companies]
+all_names_and_desc = [[f['name'], f['company'] or f['one_liner'] or f['long_description'] or ''] for f in fellows]
 
-def all_batches():
-    return all_yc_batches
+def all_years():
+    return all_fellow_years
 
 def all_names_desc():
-    return all_yc_names_and_desc
+    return all_names_and_desc
 
 def similarity(x, y):
     return cosine(x, y)
 
 def search(query):
-    query_embedding = model.encode(query)
-    by_similarity = yc_companies[:]
-    by_similarity.sort(key=lambda co: similarity(co['description_embedding'], query_embedding))
+    fellows_with_embeddings = [f for f in fellows if f.get('description_embedding')]
+    if not fellows_with_embeddings:
+        # No embeddings yet — return all fellows
+        results = [f.copy() for f in fellows]
+        for f in results:
+            f.pop('description_embedding', None)
+        return results
 
-    results = [co.copy() for co in by_similarity]
-    for co in results:
-        co.pop('description_embedding')
+    query_embedding = model.encode(query)
+    by_similarity = fellows_with_embeddings[:]
+    by_similarity.sort(key=lambda f: similarity(f['description_embedding'], query_embedding))
+
+    results = [f.copy() for f in by_similarity]
+    for f in results:
+        f.pop('description_embedding', None)
     return results
 
 def all():
-    results = yc_companies[:]
-    results = [co.copy() for co in results]
-    for co in results:
-        co.pop('description_embedding')
+    results = [f.copy() for f in fellows]
+    for f in results:
+        f.pop('description_embedding', None)
     return results
-
