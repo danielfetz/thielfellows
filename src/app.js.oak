@@ -251,7 +251,14 @@ fn Fellow(fellow, index) {
 		h(:div, ['fellow-name-year'], [
 			h(:div, ['fellow-name-year-header'], [
 				h(:div, ['fellow-name'], [
-					h(:span, ['primary-name'], [fellow.name])
+					if fellow.x_url {
+						? -> h(:span, ['primary-name'], [fellow.name])
+						_ -> Link(
+							h(:span, ['primary-name'], [fellow.name])
+							fellow.x_url
+							'primary-name'
+						)
+					}
 				])
 				h(:div, ['fellow-year'], [fellow.year])
 			])
