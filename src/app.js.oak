@@ -212,17 +212,14 @@ fn Fellow(fellow, index) {
 					State.search.expandedFellows << id
 					if State.news.(id) = ? -> {
 						nameQuery := fellow.name
-						nameCompanyQuery := fellow.name + if fellow.company {
-							'', ? -> ''
-							_ -> ' ' + fellow.company
-						}
+						companyQuery := fellow.company |> default('')
 
 						with search.news(nameQuery) fn(nameStories) {
-							if nameQuery = nameCompanyQuery -> {
+							if companyQuery = '' -> {
 								State.news.(id) := nameStories
 								render()
 							}
-							_ -> with search.news(nameCompanyQuery) fn(nameCompanyStories) {
+							_ -> with search.news(companyQuery) fn(nameCompanyStories) {
 								State.news.(id) := append(nameStories, nameCompanyStories)
 								render()
 							}
