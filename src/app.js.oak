@@ -28,27 +28,23 @@ State := {
 	search: {
 		loading?: false
 		query: LandingParams.get('q') |> default('')
-		batch: LandingParams.get('batch') |> default(?)
-		show_inactive: LandingParams.get('show_inactive') != 'false'
-		expandedCompanies: []
+		year: LandingParams.get('year') |> default(?)
+		expandedFellows: []
 	}
 	autocomplete: {
 		show?: false
 		// NOTE: 0 here stands for "no suggestion selected", and
 		// suggestions are indexed from 1, so that the user can
 		// e.g. shift+Tab to de-focus from suggestions and focus
-		// on the raw input contente itself
+		// on the raw input content itself
 		idx: 0
 		suggestions: []
 	}
 	filters: {
-		batch: ?
-		status: ?
+		year: ?
 	}
-	// map of <company.slug> => [<news object>]
+	// map of <fellow.slug> => [<news object>]
 	news: {}
-	// cache of information scraped from YC directory, /company?slug=<company>
-	scrapes: {}
 	results: []
 	error: ?
 	colorscheme: if localStorage.getItem('colorscheme') {
@@ -63,7 +59,7 @@ State := {
 
 fn performSearch {
 	State.search.loading? := true
-	State.search.expandedCompanies := []
+	State.search.expandedFellows := []
 	State.news := {}
 	render()
 
@@ -74,35 +70,21 @@ fn performSearch {
 	url := new(URL, location.href)
 	searchParams := url.searchParams
 	if State.search.query != '' -> searchParams.set('q', State.search.query)
-	if State.search.batch != ? -> searchParams.set('batch', State.search.batch)
-	if !State.search.show_inactive -> searchParams.set('show_inactive', 'false')
+	if State.search.year != ? -> searchParams.set('year', State.search.year)
 	history.replaceState(?, ?, String(url))
 
 	with search.similar({
 		text: State.search.query |> trim()
-		batch: State.search.batch
-		show_inactive: State.search.show_inactive
-	}) fn(companies) {
+		year: State.search.year
+	}) fn(fellows) {
 		State.search.loading? := false
-		State.results := companies
+		State.results := fellows
 		render()
 
 		// focus on first result, if exists
 		if State.search.query |> trim() != '' &
-			? != company := document.querySelector('.company') -> company.focus()
+			? != fellow := document.querySelector('.fellow') -> fellow.focus()
 	}
-}
-
-fn urlDisplayHostname(url) {
-	new(URL, url).hostname |> trimStart('www.')
-}
-
-fn cleanName(name) {
-	name |>
-		trimEnd('.') |>
-		trimEnd('Inc') |>
-		trim() |>
-		trimEnd(',')
 }
 
 fn hideWelcome {
@@ -120,7 +102,10 @@ fn toggleColorScheme {
 
 fn suggestionString(sugg) {
 	[name, desc] := sugg
-	name + '. ' + desc
+	if desc {
+		?, '' -> name
+		_ -> name + ' — ' + desc
+	}
 }
 
 fn autocompleteVisible? {
@@ -152,33 +137,27 @@ fn ErrorMessage(msg) {
 
 fn WelcomeMessage {
 	Examples := [
-		'AI safety'
-		'climate change'
-		'making remote work easy'
-		'supersonic flight'
-		'rapid grocery delivery'
-		'nuclear fusion'
-		'space infrastructure'
+		'AI'
+		'robotics'
+		'biotech'
+		'chips'
+		'climate'
+		'space'
+		'fintech'
 	]
 
 	h(:div, ['welcome'], [
-		h(:h2, ['welcome-title'], ['Semantic search over every YC company ever'])
+		h(:h2, ['welcome-title'], ['Explore the Thiel Fellows'])
 		h(:p, [
-			'YC Vibe Check uses '
-			h(:em, ['semantic similarity'])
-			' to search Y Combinator\'s entire portfolio of over 3,000
-			companies. Unlike the search box in '
-			Link('YC\'s directory', 'https://www.ycombinator.com/companies')
-			', '
-			h(:em, ['this'])
-			' search bar doesn\'t need you to get the keywords exactly right, only '
-			h(:em, ['close enough'])
-			' to what startups are building, to find them.'
+			'The '
+			Link('Thiel Fellowship', 'https://thielfellowship.org')
+			' supports young entrepreneurs who want to build new things
+			instead of sitting in a classroom. Each year, fellows under 23
+			receive $100,000 over two years to pursue bold ideas.'
 		])
 		h(:p, [
-			'You can search for something very specific like "3D modeling for
-			home design" or something very broad like "climate change." Here
-			are a few starting places:'
+			'Browse the fellows below or search by name, company, or area
+			of interest. Here are a few starting places:'
 		])
 		h(:div, ['welcome-examples'], {
 			Examples |> with map() fn(ex) h(:button, [
@@ -223,53 +202,29 @@ fn Label(type, text) h(:div, ['label'], [
 	h(:div, ['label-value'], [text])
 ])
 
-fn ExternalLink(type, url) if url {
-	?, '' -> ?
-	_ -> h(:a, ['external-link'], {
-		href: url
-		target: '_blank'
-		style: {
-			color: 'transparent'
-			'background-image': 'url("/img/icon-' + string(type) + '.png")'
-		}
-	}, [string(type)])
-}
-
-fn Company(company, index) {
-	id := company.slug
-	expanded? := State.search.expandedCompanies |> contains?(id)
-	scraped := State.scrapes.(id) |> default({})
-	scrapedCompany := scraped.company |> default({})
+fn Fellow(fellow, index) {
+	id := fellow.slug
+	expanded? := State.search.expandedFellows |> contains?(id)
 
 	fn toggle {
 		if expanded? {
 			false -> {
-				State.search.expandedCompanies << id
-				if State.news.(id) = ? -> with search.news(cleanName(company.name)) fn(stories) {
+				State.search.expandedFellows << id
+				if State.news.(id) = ? -> with search.news(fellow.name) fn(stories) {
 					State.news.(id) := stories
 					render()
 				}
-				if State.scrapes.(id) = ? -> with search.company(company.slug) fn(companyData) {
-					State.scrapes.(id) := companyData
-					render()
-				}
 			}
-			_ -> State.search.expandedCompanies := State.search.expandedCompanies |> filter(fn(c) c != id)
+			_ -> State.search.expandedFellows := State.search.expandedFellows |> filter(fn(c) c != id)
 		}
 		render()
 	}
 
 	h(:div, [
-		'company'
+		'fellow'
 		if expanded? {
-			true -> 'company-expanded'
-			_ -> 'company-collapsed'
-		}
-		if company.status {
-			'Acquired' -> 'company-acquired'
-			'Active' -> 'company-active'
-			'Inactive' -> 'company-inactive'
-			'Public' -> 'company-public'
+			true -> 'fellow-expanded'
+			_ -> 'fellow-collapsed'
 		}
 	], { tabIndex: 0 }, {
 		click: fn(evt) if evt.target.tagName != 'A' -> toggle()
@@ -277,111 +232,70 @@ fn Company(company, index) {
 		keydown: fn(evt) if evt.key {
 			'ArrowUp' -> {
 				evt.preventDefault()
-				companyEls := Array.from(document.querySelectorAll('.company'))
-				if ? != prev := companyEls.(index - 1) -> {
+				fellowEls := Array.from(document.querySelectorAll('.fellow'))
+				if ? != prev := fellowEls.(index - 1) -> {
 					prev.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
 					prev.focus()
 				}
 			}
 			'ArrowDown' -> {
 				evt.preventDefault()
-				companyEls := Array.from(document.querySelectorAll('.company'))
-				if ? != next := companyEls.(index + 1) -> {
+				fellowEls := Array.from(document.querySelectorAll('.fellow'))
+				if ? != next := fellowEls.(index + 1) -> {
 					next.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
 					next.focus()
 				}
 			}
 		}
 	}, [
-		h(:div, ['company-name-batch'], [
-			h(:div, ['company-name-batch-header'], [
-				if imgSrc := company.small_logo_thumb_url {
-					?, '', '/avatars/thumb/missing.png' -> h(:div, ['company-img', 'missing'], [])
-					_ -> h(:img, ['company-img'], { src: imgSrc }, [])
-				}
-				h(:div, ['company-name'], [
-					h(:a, ['primary-name'], {
-						href: company.website
-						target: '_blank'
-					}, [cleanName(company.name)])
+		h(:div, ['fellow-name-year'], [
+			h(:div, ['fellow-name-year-header'], [
+				h(:div, ['fellow-name'], [
+					h(:span, ['primary-name'], [fellow.name])
 				])
-				h(:div, ['company-batch'], [company.batch])
+				h(:div, ['fellow-year'], [fellow.year])
 			])
-			if expanded? -> h(:div, ['company-name-batch-meta'], [
-				Label('Status', company.status)
-				Label('Team size', company.team_size)
-				Label('Location', company.location)
-				if scrapedCompany.year_founded != ? -> Label('Founded', scrapedCompany.year_founded)
+			if expanded? -> h(:div, ['fellow-name-year-meta'], [
+				Label('Hometown', fellow.hometown)
+				if fellow.company != '' -> Label('Company', fellow.company)
 				if [] != tagEls := {
-					topCoTag := if company.top_company -> Tag('Yes', 'Top Company')
-					npoTag := if company.nonprofit -> Tag('Nonprofit')
-					genericTags := company.tags |> map(fn(t) Tag(t))
-
-					[topCoTag, npoTag] |> append(genericTags) |> compact()
-				} -> h(:div, ['company-name-batch-tags'], tagEls)
-				h(:div, ['company-name-batch-links'], [
-					ExternalLink(:yc, 'https://www.ycombinator.com/companies/' + company.slug)
-					ExternalLink(:crunchbase, scrapedCompany.cb_url)
-					ExternalLink(:linkedin, scrapedCompany.linkedin_url)
-					ExternalLink(:twitter, scrapedCompany.twitter_url)
-					ExternalLink(:facebook, scrapedCompany.fb_url)
-				])
+					genericTags := fellow.tags |> map(fn(t) Tag(t))
+					genericTags |> compact()
+				} -> h(:div, ['fellow-name-year-tags'], tagEls)
 			])
 		])
-		h(:div, ['company-description'], [
+		h(:div, ['fellow-description'], [
 			h(:p, [], [
 				if expanded? {
-					true -> if long := company.long_description |> default('') |> trim() {
-						'' -> company.one_liner
+					true -> if long := fellow.long_description |> default('') |> trim() {
+						'' -> if fellow.company != '' {
+							'' -> ''
+							_ -> 'Working on ' + fellow.company
+						}
 						_ -> long
 					}
-					_ -> if one := company.one_liner |> default('') |> trim() {
-						'' -> company.long_description |> take(80) + '...'
+					_ -> if one := fellow.one_liner |> default('') |> trim() {
+						'' -> if fellow.company != '' {
+							'' -> ''
+							_ -> 'Working on ' + fellow.company
+						}
 						_ -> one
 					}
 				}
 			])
-			if company.former_names != [] -> h(:div, ['former-names'], {
-				['Formerly: '] |> append(
-					company.former_names |> with map() fn(name) h(:span, ['former-name'], [name])
-				)
-			})
-			if expanded? -> if news := scraped.newsItems {
-				?, [] -> ?
-				_ -> h(:div, ['company-news'], [
-					h(:div, ['company-news-header'], ['From the YC Directory'])
-					h(:ul, ['company-news-list'], {
-						news |> with map() fn(story) h(:li, ['company-news-item'], [
-							Link(
-								h(:span, [], [
-									story.title
-									h(:span, ['company-news-hostname'], [
-										urlDisplayHostname(story.url)
-									])
-								])
-								story.url
-								'company-news-link'
-							)
-							h(:div, ['company-news-meta'], [
-								h(:span, ['company-news-date'], [story.date])
-							])
-						])
-					})
-				])
-			}
 			if expanded? -> if news := State.news.(id) {
 				?, [] -> ?
-				_ -> h(:div, ['company-news'], [
-					h(:div, ['company-news-header'], ['"' + company.name + '" on Hacker News'])
-					h(:ul, ['company-news-list'], {
-						news |> with map() fn(story) h(:li, ['company-news-item'], [
+				_ -> h(:div, ['fellow-news'], [
+					h(:div, ['fellow-news-header'], ['"' + fellow.name + '" on Hacker News'])
+					h(:ul, ['fellow-news-list'], {
+						news |> with map() fn(story) h(:li, ['fellow-news-item'], [
 							Link(
 								h(:span, [], [
 									story.title
 									if story.url {
 										?, '' -> ?
-										_ -> h(:span, ['company-news-hostname'], [
-											urlDisplayHostname(story.url)
+										_ -> h(:span, ['fellow-news-hostname'], [
+											new(URL, story.url).hostname
 										])
 									}
 								])
@@ -389,51 +303,51 @@ fn Company(company, index) {
 									?, '' -> 'https://news.ycombinator.com/item?id=' + story.objectID
 									_ -> url
 								}
-								'company-news-link'
+								'fellow-news-link'
 							)
-							h(:div, ['company-news-meta'], [
-								h(:span, ['company-news-date'], [
+							h(:div, ['fellow-news-meta'], [
+								h(:span, ['fellow-news-date'], [
 									new(Date, story.created_at).toLocaleDateString()
 								])
 								' · '
-								h(:span, ['company-news-points'], [story.points, if story.points {
+								h(:span, ['fellow-news-points'], [story.points, if story.points {
 									1 -> ' point'
 									_ -> ' points'
 								}])
 								' · '
 								Link(
-									h(:span, ['company-news-comments'], [story.num_comments, if story.num_comments {
+									h(:span, ['fellow-news-comments'], [story.num_comments, if story.num_comments {
 										1 -> ' comment'
 										_ -> ' comments'
 									}])
 									'https://news.ycombinator.com/item?id=' + story.objectID
-									'company-news-meta-link'
+									'fellow-news-meta-link'
 								)
 							])
 						])
 					})
 				])
 			}
-			// loading spinner for both news feeds
-			if expanded? & (scraped = ? | State.news.(id) = ?) ->
+			// loading spinner for news
+			if expanded? & State.news.(id) = ? ->
 				h(:div, ['loading'], ['loading...'])
 			if expanded? -> h(:button, ['more-like-this-button'], {}, {
 				click: fn {
-					State.search.query := if long := company.long_description |> default('') |> trim() {
-						'' -> company.one_liner
+					State.search.query := if long := fellow.long_description |> default('') |> trim() {
+						'' -> fellow.company
 						_ -> long
 					}
 					performSearch()
 				}
-			}, ['More companies like this →'])
+			}, ['More fellows like this →'])
 		])
 	])
 }
 
-fn CompanyList(companies) {
+fn FellowList(fellows) {
 	h(:ul, ['search-results-list'], {
-		companies |> with map() fn(company, i) h(:li, ['search-results-item'], [
-			Company(company, i)
+		fellows |> with map() fn(fellow, i) h(:li, ['search-results-item'], [
+			Fellow(fellow, i)
 		])
 	})
 }
@@ -445,8 +359,8 @@ fn render {
 		if State.error != ? -> ErrorMessage(State.error)
 		h(:header, [], [
 			h(:a, ['logo'], { href: '/' }, {}, [
-				'YC Vibe Check'
-				h(:span, ['logo-subtitle', 'desktop'], [': What\'s everybody up to?'])
+				'Thiel Fellows'
+				h(:span, ['logo-subtitle', 'desktop'], [': Who are they building?'])
 			])
 			h(:nav, [], [
 				h(:button, ['colorscheme-button', 'colorscheme-' + State.colorscheme], {
@@ -467,7 +381,6 @@ fn render {
 						render()
 					}
 				}, ['about'])
-				Link('github', 'https://github.com/thesephist/ycvibecheck', 'github-button')
 			])
 		])
 		h(:main, [
@@ -483,7 +396,7 @@ fn render {
 						h(:input, ['search-input'], {
 							type: 'text'
 							value: State.search.query
-							placeholder: 'Name a company or pitch an idea...'
+							placeholder: 'Search by name, company, or interest...'
 							autofocus: true
 						}, {
 							input: fn(evt) {
@@ -501,12 +414,6 @@ fn render {
 								render()
 							}
 							blur: fn {
-								// NOTE: this is a little dirty, but the delay
-								// allows for clicking on a search result to work.
-								// If this isn't there, the mousedown outside of
-								// the input will blur the input, and there will be
-								// no suggestion for the click event to fire on
-								// thereafter.
 								with wait(0.1) fn {
 									State.autocomplete.show? := false
 									render()
@@ -578,69 +485,48 @@ fn render {
 					h(:button, ['search-button'], { title: 'Submit search' }, ['Search'])
 				])
 				h(:div, ['search-filter-row'], [
-					h(:label, ['search-filter-batch'], [
+					h(:label, ['search-filter-year'], [
 						h(:select, [], {}, {
 							change: fn(evt) {
-								State.search.batch := if batch := evt.target.value {
+								State.search.year := if year := evt.target.value {
 									'' -> ?
-									_ -> batch
+									_ -> year
 								}
 								performSearch()
 							}
 						}, {
-							allBatches := h(:option, [], {
+							allYears := h(:option, [], {
 								value: ''
-								selected: ? = State.search.batch
-							}, ['All batches'])
-							batches := YC_BATCHES |> with map() fn(batch) {
+								selected: ? = State.search.year
+							}, ['All years'])
+							years := TF_YEARS |> with map() fn(year) {
 								h(:option, [], {
-									value: batch
-									selected: batch = State.search.batch
-								}, [batch])
+									value: year
+									selected: year = State.search.year
+								}, [year])
 							}
 
-							[allBatches] |> append(batches)
+							[allYears] |> append(years)
 						})
-					])
-					h(:label, ['search-filter-active'], [
-						h(:input, [], {
-							type: 'checkbox'
-							checked: State.search.show_inactive
-						}, {
-							change: fn(evt) {
-								State.search.show_inactive := evt.target.checked
-								performSearch()
-							}
-						}, [])
-						h(:span, ['desktop'], ['Show inactive companies'])
-						h(:span, ['mobile'], ['Show inactives'])
 					])
 				])
 			])
 			h(:div, ['search-results'], [
 				if State.search.loading? {
 					true -> h(:div, ['loading', 'loading-search'], ['loading...'])
-					_ -> CompanyList(State.results)
+					_ -> FellowList(State.results)
 				}
 			])
 		])
 		h(:footer, [], [
 			h(:p, [], [
-				'Project by '
-				Link('Linus', 'https://thesephist.com')
-				', powered by '
+				'Powered by '
 				Link('Oak', 'https://oaklang.org')
 				' and '
 				Link('Torus', 'https://github.com/thesephist/torus')
-				'. Data sourced from '
-				Link('yc_company_scraper', 'https://github.com/akshaybhalotia/yc_company_scraper')
-				' and semantic search made possible with '
+				'. Semantic search made possible with '
 				Link('sentence-transformers', 'https://www.sbert.net/')
 				'.'
-			])
-			h(:p, [], [
-				'Last updated April 2022, up to W22 batch. '
-				Link('Submit an update.', 'https://github.com/thesephist/ycvibecheck')
 			])
 		])
 	])
@@ -662,4 +548,3 @@ search.setErrorHandler(fn setError(msg) {
 
 render()
 performSearch()
-

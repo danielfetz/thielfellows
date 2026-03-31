@@ -378,7 +378,7 @@ li.search-results-item {
     margin: 2px 0;
 }
 
-.company {
+.fellow {
     line-height: 1.5em;
     display: flex;
     flex-direction: row;
@@ -391,15 +391,15 @@ li.search-results-item {
     transition: transform .2s;
 }
 
-.company:hover {
+.fellow:hover {
     background: var(--secondary-bg);
 }
 
-.company:active {
+.fellow:active {
     transform: translate(0, 2px);
 }
 
-.company.company-expanded {
+.fellow.fellow-expanded {
     background: var(--secondary-bg);
     position: relative;
     width: calc(100% + 24px);
@@ -408,30 +408,30 @@ li.search-results-item {
     padding: 8px;
 }
 
-.company.company-inactive:not(.company-expanded) {
+.fellow.fellow-inactive:not(.fellow-expanded) {
     opacity: .5;
 }
 
-.company.company-inactive .company-name {
+.fellow.fellow-inactive .fellow-name {
     text-decoration: line-through;
 }
 
-.company.company-inactive .company-img {
+.fellow.fellow-inactive .fellow-img {
     filter: grayscale(1);
 }
 
-.company .company-name-batch {
+.fellow .fellow-name-year {
     min-width: 24ch;
 }
 
-.company .company-name-batch-header {
+.fellow .fellow-name-year-header {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 12px;
 }
 
-.company .company-name-batch-meta {
+.fellow .fellow-name-year-meta {
     width: 24ch; /* matching parent */
     box-sizing: border-box;
     padding-left: 32px;
@@ -448,7 +448,7 @@ li.search-results-item {
     margin-bottom: -4px;
 }
 
-.company .company-name-batch-tags {
+.fellow .fellow-name-year-tags {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -487,7 +487,7 @@ li.search-results-item {
     padding-left: 6px;
 }
 
-.company-name-batch-links {
+.fellow-name-year-links {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -509,11 +509,11 @@ li.search-results-item {
     opacity: .7;
 }
 
-.company .company-name {
+.fellow .fellow-name {
     flex-grow: 1;
 }
 
-.company .company-img {
+.fellow .fellow-img {
     display: block;
     height: calc(1em + 4px);
     width: calc(1em + 4px);
@@ -521,96 +521,96 @@ li.search-results-item {
     border-radius: 3px;
 }
 
-.company a.primary-name {
+.fellow a.primary-name {
     color: var(--primary-text);
     text-decoration: none;
     font-weight: bold;
 }
 
-.company a.primary-name:hover {
+.fellow a.primary-name:hover {
     text-decoration: underline;
 }
 
-.company .company-batch {
+.fellow .fellow-year {
     width: 4ch;
     color: var(--secondary-text);
     font-variant-numeric: tabular-nums;
 }
 
-.company .company-description p {
+.fellow .fellow-description p {
     margin: 0;
     max-width: 64ch;
     white-space: pre-wrap;
 }
 
-.company .former-names {
+.fellow .former-names {
     font-size: calc(1em - 4px);
     color: var(--secondary-text);
 }
 
-.company .former-name::before {
+.fellow .former-name::before {
     content: ' / '
 }
 
-.company .former-name:first-child::before {
+.fellow .former-name:first-child::before {
     content: none;
 }
 
-.company .company-news {
+.fellow .fellow-news {
     margin-top: 12px;
 }
 
-.company .company-news-header {
+.fellow .fellow-news-header {
     font-weight: bold;
 }
 
-.company ul.company-news-list {
+.fellow ul.fellow-news-list {
     padding-left: 0;
 }
 
-.company li.company-news-item {
+.fellow li.fellow-news-item {
     list-style: none;
     margin: 4px 0;
 }
 
-.company a.company-news-link {
+.fellow a.fellow-news-link {
     text-decoration: none;
     color: var(--primary-text);
 }
 
-.company a.company-news-link:hover {
+.fellow a.fellow-news-link:hover {
     text-decoration: underline;
 }
 
-.company a.company-news-link:visited {
+.fellow a.fellow-news-link:visited {
     color: var(--secondary-text);
 }
 
-.company .company-news-hostname {
+.fellow .fellow-news-hostname {
     white-space: nowrap;
     margin-left: 8px;
 }
 
-.company .company-news-meta,
-.company .company-news-hostname {
+.fellow .fellow-news-meta,
+.fellow .fellow-news-hostname {
     font-size: calc(1em - 4px);
     color: var(--secondary-text);
 }
 
-.company .company-news-meta {
+.fellow .fellow-news-meta {
     margin-top: -5px;
 }
 
-.company .company-news-meta-link {
+.fellow .fellow-news-meta-link {
     color: inherit;
     text-decoration: none;
 }
 
-.company .company-news-meta-link:hover {
+.fellow .fellow-news-meta-link:hover {
     text-decoration: underline;
 }
 
-.company .more-like-this-button {
+.fellow .more-like-this-button {
     padding: 6px 12px;
     font-size: 1em;
     background: var(--primary-bg);
@@ -624,11 +624,11 @@ li.search-results-item {
     margin-bottom: 8px;
 }
 
-.company .more-like-this-button:hover {
+.fellow .more-like-this-button:hover {
     background: var(--hover-bg);
 }
 
-.company .more-like-this-button:active {
+.fellow .more-like-this-button:active {
     background: var(--active-bg);
 }
 
@@ -728,7 +728,7 @@ footer a:hover {
 }
 
 @media only screen and (max-width: 800px) {
-    .company .company-name-batch {
+    .fellow .fellow-name-year {
         min-width: 20ch;
     }
 }
@@ -750,36 +750,36 @@ footer a:hover {
         position: relative;
     }
 
-    .company {
+    .fellow {
         flex-direction: column;
         gap: 2px;
         margin-bottom: 16px;
     }
 
-    .company.company-expanded {
+    .fellow.fellow-expanded {
         width: calc(100% + 16px);
         left: -8px;
     }
 
-    .company .company-name-batch {
+    .fellow .fellow-name-year {
         gap: 12px;
         width: 100%;
         justify-content: space-between;
     }
 
-    .company .company-name-batch-tags {
+    .fellow .fellow-name-year-tags {
         margin-bottom: 16px;
     }
 
-    .company .company-name {
+    .fellow .fellow-name {
         flex-grow: 1;
     }
 
-    .company .company-name-batch-meta {
+    .fellow .fellow-name-year-meta {
         padding-left: 0;
     }
 
-    .company .more-like-this-button {
+    .fellow .more-like-this-button {
         margin-bottom: 0;
     }
 }
