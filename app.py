@@ -1,11 +1,14 @@
 import json
-from flask import Flask, request, jsonify, send_from_directory
+import os
+from flask import Flask, request, jsonify, Response
 from server.search import search, all as all_fellows, all_names_desc, all_years
+
+_dir = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__,
         static_url_path='/',
-        static_folder='static',
-        template_folder='static')
+        static_folder=os.path.join(_dir, 'static'),
+        template_folder=os.path.join(_dir, 'static'))
 app.config['JSON_AS_ASCII'] = False
 
 @app.route('/search', methods=['GET'])
@@ -32,7 +35,7 @@ def semantic_search():
 def get_preloads_js():
     years = f'const TF_YEARS = {json.dumps(all_years())};'
     names = f'const TF_NAMES_DESC = {json.dumps(all_names_desc())};'
-    return '\n'.join([years, names])
+    return Response('\n'.join([years, names]), mimetype='application/javascript')
 
 @app.route('/', methods=['GET'])
 def index():
