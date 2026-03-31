@@ -109,13 +109,19 @@ fn autocomplete(query) {
 					_ -> '($|\\W)'
 				}, 'img')
 
-				suggestions |> with filter() fn(sugg) if count := countMatches(sugg.0, regexp.exec.bind(regexp)) {
-					0 -> false
-					_ -> true
+					suggestions |> with filter() fn(sugg) {
+						nameMatches := countMatches(sugg.0, regexp.exec.bind(regexp))
+						descMatches := countMatches(if desc := sugg.1 {
+							? -> ''
+							_ -> desc
+						}, regexp.exec.bind(regexp))
+						if nameMatches + descMatches {
+							0 -> false
+							_ -> true
+						}
+					}
 				}
-			}
 			suggestions |> sort.sort(fn(sugg) sugg.0)
 		}
 	}
 }
-

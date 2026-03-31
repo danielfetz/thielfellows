@@ -207,14 +207,28 @@ fn Fellow(fellow, index) {
 	expanded? := State.search.expandedFellows |> contains?(id)
 
 	fn toggle {
-		if expanded? {
-			false -> {
-				State.search.expandedFellows << id
-				if State.news.(id) = ? -> with search.news(fellow.name) fn(stories) {
-					State.news.(id) := stories
-					render()
+			if expanded? {
+				false -> {
+					State.search.expandedFellows << id
+					if State.news.(id) = ? -> {
+						nameQuery := fellow.name
+						nameCompanyQuery := fellow.name + if fellow.company {
+							'', ? -> ''
+							_ -> ' ' + fellow.company
+						}
+
+						with search.news(nameQuery) fn(nameStories) {
+							if nameQuery = nameCompanyQuery -> {
+								State.news.(id) := nameStories
+								render()
+							}
+							_ -> with search.news(nameCompanyQuery) fn(nameCompanyStories) {
+								State.news.(id) := append(nameStories, nameCompanyStories)
+								render()
+							}
+						}
+					}
 				}
-			}
 			_ -> State.search.expandedFellows := State.search.expandedFellows |> filter(fn(c) c != id)
 		}
 		render()
@@ -251,7 +265,14 @@ fn Fellow(fellow, index) {
 		h(:div, ['fellow-name-year'], [
 			h(:div, ['fellow-name-year-header'], [
 				h(:div, ['fellow-name'], [
-					h(:span, ['primary-name'], [fellow.name])
+					if fellow.x_url {
+						? -> h(:span, ['primary-name'], [fellow.name])
+						_ -> Link(
+							h(:span, ['primary-name'], [fellow.name])
+							fellow.x_url
+							'primary-name'
+						)
+					}
 				])
 				h(:div, ['fellow-year'], [fellow.year])
 			])
