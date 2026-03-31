@@ -37,6 +37,13 @@ def get_preloads_js():
     names = f'const TF_NAMES_DESC = {json.dumps(all_names_desc())};'
     return Response('\n'.join([years, names]), mimetype='application/javascript')
 
+
+@app.route('/disabled-endpoint', methods=['GET'])
+def disabled_endpoint():
+    # Legacy bundles may request this endpoint when expanding a fellow card.
+    # Return an empty payload instead of 404 so the UI doesn't surface an error.
+    return jsonify({})
+
 @app.route('/', methods=['GET'])
 def index():
     return app.send_static_file('index.html')
