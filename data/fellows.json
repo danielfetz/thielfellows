@@ -231,7 +231,9 @@
     "id": 13,
     "name": "Luke Farritor",
     "slug": "luke-farritor",
-    "former_names": [],
+    "former_names": [
+      "Joined Elon Musk's Department of Government Efficiency (DOGE) in 2025."
+    ],
     "small_logo_thumb_url": "",
     "website": "",
     "hometown": "Lincoln, NE",
@@ -364,7 +366,9 @@
     "id": 20,
     "name": "Yash Patil",
     "slug": "yash-patil",
-    "former_names": [],
+    "former_names": [
+      "Has since left OpenAI and co-founded Applied Compute."
+    ],
     "small_logo_thumb_url": "",
     "website": "",
     "hometown": "Austin, TX",
