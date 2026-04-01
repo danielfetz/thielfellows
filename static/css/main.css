@@ -406,7 +406,7 @@ li.search-results-item {
     width: calc(100% + 24px);
     top: 0;
     left: -12px;
-    padding: 8px;
+    padding: 8px 12px;
 }
 
 .fellow.fellow-inactive:not(.fellow-expanded) {

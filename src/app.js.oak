@@ -205,6 +205,10 @@ fn Label(type, text) h(:div, ['label'], [
 fn Fellow(fellow, index) {
 	id := fellow.slug
 	expanded? := State.search.expandedFellows |> contains?(id)
+	newsHeaderQuery := fellow.name + if fellow.company {
+		'', ? -> ''
+		_ -> '" or "' + fellow.company
+	}
 
 	fn toggle {
 			if expanded? {
@@ -304,7 +308,7 @@ fn Fellow(fellow, index) {
 			if expanded? -> if news := State.news.(id) {
 				?, [] -> ?
 				_ -> h(:div, ['fellow-news'], [
-					h(:div, ['fellow-news-header'], ['"' + fellow.name + '" on Hacker News'])
+					h(:div, ['fellow-news-header'], ['"' + newsHeaderQuery + '" on Hacker News'])
 					h(:ul, ['fellow-news-list'], {
 						news |> with map() fn(story) h(:li, ['fellow-news-item'], [
 							Link(
