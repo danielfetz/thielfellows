@@ -29,6 +29,7 @@ State := {
 		loading?: false
 		query: LandingParams.get('q') |> default('')
 		year: LandingParams.get('year') |> default(?)
+		showMovedOn?: LandingParams.get('moved_on') = 'true'
 		expandedFellows: []
 	}
 	autocomplete: {
@@ -71,6 +72,10 @@ fn performSearch {
 	searchParams := url.searchParams
 	if State.search.query != '' -> searchParams.set('q', State.search.query)
 	if State.search.year != ? -> searchParams.set('year', State.search.year)
+	if State.search.showMovedOn? {
+		true -> searchParams.set('moved_on', 'true')
+		_ -> searchParams.delete('moved_on')
+	}
 	history.replaceState(?, ?, String(url))
 
 	with search.similar({
@@ -78,7 +83,10 @@ fn performSearch {
 		year: State.search.year
 	}) fn(fellows) {
 		State.search.loading? := false
-		State.results := fellows
+		State.results := if State.search.showMovedOn? {
+			true -> fellows |> filter(fn(fellow) len(fellow.former_names |> default([])) > 0)
+			_ -> fellows
+		}
 		render()
 
 		// focus on first result, if exists
@@ -205,16 +213,32 @@ fn Label(type, text) h(:div, ['label'], [
 fn Fellow(fellow, index) {
 	id := fellow.slug
 	expanded? := State.search.expandedFellows |> contains?(id)
+	movedOn? := len(fellow.former_names |> default([])) > 0
+	newsHeaderQuery := fellow.name + if fellow.company {
+		'', ? -> ''
+		_ -> '" or "' + fellow.company
+	}
 
 	fn toggle {
-		if expanded? {
-			false -> {
-				State.search.expandedFellows << id
-				if State.news.(id) = ? -> with search.news(fellow.name) fn(stories) {
-					State.news.(id) := stories
-					render()
+			if expanded? {
+				false -> {
+					State.search.expandedFellows << id
+					if State.news.(id) = ? -> {
+						nameQuery := fellow.name
+						companyQuery := fellow.company |> default('')
+
+						with search.news(nameQuery) fn(nameStories) {
+							if companyQuery = '' -> {
+								State.news.(id) := nameStories
+								render()
+							}
+							_ -> with search.news(companyQuery) fn(nameCompanyStories) {
+								State.news.(id) := append(nameStories, nameCompanyStories)
+								render()
+							}
+						}
+					}
 				}
-			}
 			_ -> State.search.expandedFellows := State.search.expandedFellows |> filter(fn(c) c != id)
 		}
 		render()
@@ -251,13 +275,27 @@ fn Fellow(fellow, index) {
 		h(:div, ['fellow-name-year'], [
 			h(:div, ['fellow-name-year-header'], [
 				h(:div, ['fellow-name'], [
-					h(:span, ['primary-name'], [fellow.name])
+					if fellow.x_url {
+						? -> h(:span, ['primary-name'], [fellow.name])
+						_ -> Link(
+							h(:span, ['primary-name'], [fellow.name])
+							fellow.x_url
+							'primary-name'
+						)
+					}
 				])
 				h(:div, ['fellow-year'], [fellow.year])
 			])
 			if expanded? -> h(:div, ['fellow-name-year-meta'], [
 				Label('Hometown', fellow.hometown)
 				if fellow.company != '' -> Label('Company', fellow.company)
+				if movedOn? {
+					true -> Label('Status', 'Moved on')
+					_ -> if fellow.status != 'Active' -> Label('Status', fellow.status)
+				}
+				if movedOn? -> fellow.former_names |> with map() fn(former) {
+					h(:div, ['fellow-former-name'], [former])
+				}
 				if [] != tagEls := {
 					genericTags := fellow.tags |> map(fn(t) Tag(t))
 					genericTags |> compact()
@@ -286,7 +324,7 @@ fn Fellow(fellow, index) {
 			if expanded? -> if news := State.news.(id) {
 				?, [] -> ?
 				_ -> h(:div, ['fellow-news'], [
-					h(:div, ['fellow-news-header'], ['"' + fellow.name + '" on Hacker News'])
+					h(:div, ['fellow-news-header'], ['"' + newsHeaderQuery + '" on Hacker News'])
 					h(:ul, ['fellow-news-list'], {
 						news |> with map() fn(story) h(:li, ['fellow-news-item'], [
 							Link(
@@ -508,6 +546,18 @@ fn render {
 
 							[allYears] |> append(years)
 						})
+					])
+					h(:label, ['search-filter-moved-on'], [
+						h(:input, [], {
+							type: 'checkbox'
+							checked: State.search.showMovedOn?
+						}, {
+							change: fn(evt) {
+								State.search.showMovedOn? := evt.target.checked
+								performSearch()
+							}
+						})
+						' Show fellows who have moved on from their original project'
 					])
 				])
 			])
